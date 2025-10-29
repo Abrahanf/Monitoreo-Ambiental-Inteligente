@@ -1,0 +1,38 @@
+# infrastructure/docker-compose.prod.yml
+# Para producción (AWS)
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      MQTT_BROKER_URL: ${MQTT_BROKER_URL}
+      IA_SERVICE_URL: ${IA_SERVICE_URL}
+      AWS_REGION: ${AWS_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+    ports:
+      - "5000:5000"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: /ecs/environmental-monitoring
+        awslogs-stream-prefix: backend
+
+  ia_service:
+    build:
+      context: ../ia-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: /ecs/environmental-monitoring
+        awslogs-stream-prefix: ia-service

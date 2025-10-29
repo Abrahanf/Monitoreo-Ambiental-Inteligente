@@ -1,0 +1,10 @@
+# Inicializar Git
+git init
+echo "__pycache__/
+*.pyc
+.env
+*.log
+venv/
+.DS_Store
+*.pkl
+saved_models/*.pkl" > .gitignore
