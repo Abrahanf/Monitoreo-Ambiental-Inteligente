@@ -4,12 +4,12 @@ from datetime import timedelta
 
 class Config:
     """Configuración base"""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'Abrahan75418610')
     
     # Base de datos
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        'mysql+pymysql://user:password@localhost:3306/environmental_monitoring'
+        'mysql+pymysql://root:@localhost:3306/monitoreo_db'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False

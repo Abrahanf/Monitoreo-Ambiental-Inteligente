@@ -1,0 +1,322 @@
+<!-- frontend/templates/user/dashboard.html - VERSIÓN CORREGIDA -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Monitoreo Ambiental{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="page-header">
+        <h1>Dashboard de Monitoreo</h1>
+        <p class="subtitle">
+            {% if session.get('nodo_id') %}
+                Monitoreando: <strong>Nodo #{{ session.get('nodo_id') }}</strong>
+            {% else %}
+                Sin nodo asignado
+            {% endif %}
+        </p>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card temp-card">
+            <div class="stat-icon">🌡️</div>
+            <h3>Temperatura</h3>
+            <p class="stat-value" id="temp-value">--</p>
+            <span class="stat-unit">°C</span>
+            <div class="stat-status" id="temp-status"></div>
+        </div>
+        
+        <div class="stat-card hum-card">
+            <div class="stat-icon">💧</div>
+            <h3>Humedad</h3>
+            <p class="stat-value" id="hum-value">--</p>
+            <span class="stat-unit">%</span>
+            <div class="stat-status" id="hum-status"></div>
+        </div>
+        
+        <div class="stat-card co2-card">
+            <div class="stat-icon">🌬️</div>
+            <h3>CO2</h3>
+            <p class="stat-value" id="co2-value">--</p>
+            <span class="stat-unit">ppm</span>
+            <div class="stat-status" id="co2-status"></div>
+        </div>
+        
+        <div class="stat-card alert-card">
+            <div class="stat-icon">⚠️</div>
+            <h3>Alertas Activas</h3>
+            <p class="stat-value" id="alerts-count">--</p>
+            <span class="stat-unit">alertas</span>
+            <div class="stat-status" id="alert-status"></div>
+        </div>
+    </div>
+    
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>📈 Temperatura (últimas 24h)</h3>
+            <canvas id="tempChart"></canvas>
+        </div>
+        
+        <div class="chart-card">
+            <h3>💧 Humedad (últimas 24h)</h3>
+            <canvas id="humChart"></canvas>
+        </div>
+        
+        <div class="chart-card">
+            <h3>🌬️ CO2 (últimas 24h)</h3>
+            <canvas id="co2Chart"></canvas>
+        </div>
+    </div>
+    
+    <div class="alerts-section">
+        <h3>🔔 Alertas Recientes</h3>
+        <div id="alerts-list" class="alerts-container">
+            <p class="loading">Cargando alertas...</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    margin-bottom: 2rem;
+}
+.page-header h1 {
+    margin: 0;
+    color: #1f2937;
+}
+.subtitle {
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+.stat-status {
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.loading {
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem;
+}
+</style>
+
+<script>
+// Obtener node_id del usuario actual
+const USER_NODE_ID = {{ session,get('nodo_id') or 'null' }};
+
+if (!USER_NODE_ID) {
+    document.querySelector('.dashboard').innerHTML = `
+        <div class="alert alert-warning" style="text-align: center; padding: 3rem;">
+            <h2>⚠️ Sin Nodo Asignado</h2>
+            <p>No tienes un nodo asignado. Por favor, contacta al administrador.</p>
+        </div>
+    `;
+} else {
+    // Cargar datos del dashboard
+    loadDashboardData();
+    
+    // Actualizar cada 30 segundos
+    setInterval(loadDashboardData, 30000);
+}
+
+let tempChart, humChart, co2Chart;
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch(`/api/measurements/dashboard/${USER_NODE_ID}`);
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar datos');
+        }
+        
+        const data = await response.json();
+        console.log('Datos recibidos:', data);
+        
+        // Actualizar valores actuales
+        if (data.latest_measurement) {
+            updateCurrentValues(data.latest_measurement);
+        }
+        
+        // Actualizar contador de alertas
+        const alertCount = data.active_alerts?.length || 0;
+        document.getElementById('alerts-count').textContent = alertCount;
+        document.getElementById('alert-status').textContent = alertCount > 0 ? 'Revisar' : 'Normal';
+        document.getElementById('alert-status').className = 'stat-status ' + (alertCount > 0 ? 'status-danger' : 'status-success');
+        
+        // Actualizar gráficos
+        if (data.hourly_data && data.hourly_data.length > 0) {
+            updateCharts(data.hourly_data);
+        }
+        
+        // Mostrar alertas
+        displayAlerts(data.active_alerts || []);
+        
+    } catch (error) {
+        console.error('Error cargando dashboard:', error);
+        document.querySelector('.stats-grid').innerHTML = `
+            <div class="alert alert-danger">
+                Error al cargar los datos. Por favor, recarga la página.
+            </div>
+        `;
+    }
+}
+
+function updateCurrentValues(measurement) {
+    // Temperatura
+    document.getElementById('temp-value').textContent = measurement.temperatura.toFixed(1);
+    const tempStatus = getTempStatus(measurement.temperatura);
+    document.getElementById('temp-status').textContent = tempStatus.text;
+    document.getElementById('temp-status').className = 'stat-status ' + tempStatus.class;
+    
+    // Humedad
+    document.getElementById('hum-value').textContent = measurement.humedad.toFixed(1);
+    const humStatus = getHumStatus(measurement.humedad);
+    document.getElementById('hum-status').textContent = humStatus.text;
+    document.getElementById('hum-status').className = 'stat-status ' + humStatus.class;
+    
+    // CO2
+    document.getElementById('co2-value').textContent = measurement.co2.toFixed(0);
+    const co2Status = getCO2Status(measurement.co2);
+    document.getElementById('co2-status').textContent = co2Status.text;
+    document.getElementById('co2-status').className = 'stat-status ' + co2Status.class;
+}
+
+function getTempStatus(temp) {
+    if (temp < 18) return { text: 'Bajo', class: 'status-warning' };
+    if (temp > 26) return { text: 'Alto', class: 'status-danger' };
+    return { text: 'Normal', class: 'status-success' };
+}
+
+function getHumStatus(hum) {
+    if (hum < 30) return { text: 'Seco', class: 'status-warning' };
+    if (hum > 70) return { text: 'Húmedo', class: 'status-danger' };
+    return { text: 'Normal', class: 'status-success' };
+}
+
+function getCO2Status(co2) {
+    if (co2 < 400) return { text: 'Excelente', class: 'status-success' };
+    if (co2 < 1000) return { text: 'Bueno', class: 'status-success' };
+    if (co2 < 2000) return { text: 'Moderado', class: 'status-warning' };
+    return { text: 'Alto', class: 'status-danger' };
+}
+
+function updateCharts(hourlyData) {
+    const labels = hourlyData.map(d => {
+        const date = new Date(d.fecha_hora);
+        return date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    });
+    
+    const temps = hourlyData.map(d => d.temperatura);
+    const hums = hourlyData.map(d => d.humedad);
+    const co2s = hourlyData.map(d => d.co2);
+    
+    // Temperatura
+    createOrUpdateChart('tempChart', tempChart, labels, temps, 'Temperatura (°C)', 'rgb(239, 68, 68)');
+    
+    // Humedad
+    createOrUpdateChart('humChart', humChart, labels, hums, 'Humedad (%)', 'rgb(59, 130, 246)');
+    
+    // CO2
+    createOrUpdateChart('co2Chart', co2Chart, labels, co2s, 'CO2 (ppm)', 'rgb(34, 197, 94)');
+}
+
+function createOrUpdateChart(canvasId, chartInstance, labels, data, label, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+    
+    window[canvasId.replace('Chart', '') + 'Chart'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: label,
+                data: data,
+                borderColor: color,
+                backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
+function displayAlerts(alerts) {
+    const alertsList = document.getElementById('alerts-list');
+    
+    if (!alerts || alerts.length === 0) {
+        alertsList.innerHTML = '<p class="loading">✅ No hay alertas activas</p>';
+        return;
+    }
+    
+    alertsList.innerHTML = alerts.map(alert => {
+        const severityClass = alert.severidad.toLowerCase();
+        return `
+            <div class="alert-item severity-${severityClass}">
+                <div class="alert-header">
+                    <strong>${alert.tipo}</strong>
+                    <span class="severity-badge ${severityClass}">${alert.severidad}</span>
+                </div>
+                <p>${alert.mensaje || `Valor: ${alert.valor}, Umbral: ${alert.umbral}`}</p>
+                <span class="alert-time">${new Date(alert.fecha_creacion).toLocaleString('es-PE')}</span>
+            </div>
+        `;
+    }).join('');
+}
+</script>
+
+<style>
+.status-success { background: #d1fae5; color: #065f46; }
+.status-warning { background: #fef3c7; color: #92400e; }
+.status-danger { background: #fee2e2; color: #991b1b; }
+
+.alert-item {
+    background: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #e5e7eb;
+}
+.severity-crítica { border-left-color: #dc2626; }
+.severity-alta { border-left-color: #f59e0b; }
+.severity-media { border-left-color: #eab308; }
+.severity-baja { border-left-color: #3b82f6; }
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.severity-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.alert-time {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+</style>
+{% endblock %}

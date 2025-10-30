@@ -22,7 +22,7 @@ class UserService:
         user = UserRepository.create({
             'nombre': user.nombre,
             'correo': user.correo,
-            'contraseña': user.contraseña,
+            'contraseña': user.contrasena,
             'rol': user.rol,
             'nodo_id': user.nodo_id,
             'ubicacion_asignada': user.ubicacion_asignada

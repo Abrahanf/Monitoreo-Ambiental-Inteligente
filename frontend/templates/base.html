@@ -1,0 +1,74 @@
+<!-- frontend/templates/base.html - VERSIÓN CORREGIDA -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Monitoreo Ambiental{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <nav class="navbar">
+        <div class="nav-brand">🌡️ Monitoreo Ambiental</div>
+        <ul class="nav-menu">
+            <li><a href="{{ url_for('web.dashboard') }}" {% if request.endpoint == 'web.dashboard' %}class="active"{% endif %}>Dashboard</a></li>
+            <li><a href="{{ url_for('web.historical') }}" {% if request.endpoint == 'web.historical' %}class="active"{% endif %}>Históricos</a></li>
+            <li><a href="{{ url_for('web.alerts') }}" {% if request.endpoint == 'web.alerts' %}class="active"{% endif %}>Alertas</a></li>
+            <li><a href="{{ url_for('web.reports') }}" {% if request.endpoint == 'web.reports' %}class="active"{% endif %}>Reportes</a></li>
+            
+            {% if session.get('rol') == 'administrador' %}
+            <li class="dropdown">
+                <a href="#" class="dropbtn">Admin ▼</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('web.admin_users') }}">👥 Usuarios</a>
+                    <a href="{{ url_for('web.admin_nodes') }}">📡 Nodos</a>
+                    <a href="{{ url_for('web.admin_ia_config') }}">🤖 Config IA</a>
+                    <a href="{{ url_for('web.admin_global_reports') }}">📊 Reportes Globales</a>
+                </div>
+            </li>
+            {% endif %}
+            
+            <li class="user-menu">
+                <span class="user-name">👤 {{ session.get('nombre', 'Usuario') }}</span>
+                <a href="{{ url_for('web.profile') }}" class="profile-link">⚙️</a>
+                <a href="{{ url_for('web.logout') }}" class="logout-link">🚪 Salir</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" id="flash-{{ loop.index }}">
+                    {{ message }}
+                    <button onclick="document.getElementById('flash-{{ loop.index }}').remove()">✕</button>
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Auto-cerrar mensajes flash después de 5 segundos
+        setTimeout(() => {
+            document.querySelectorAll('.flash-messages .alert').forEach(alert => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

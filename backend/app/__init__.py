@@ -1,5 +1,6 @@
-# backend/app/__init__.py
+# backend/app/__init__.py - AÑADIR CONFIGURACIÓN DE SESIÓN
 from flask import Flask
+from datetime import timedelta
 from app.config import config
 from app.extensions import init_extensions, db
 from app.blueprints import register_blueprints
@@ -12,6 +13,11 @@ def create_app(config_name='default'):
     
     # Cargar configuración
     app.config.from_object(config[config_name])
+    
+    # CONFIGURACIÓN DE SESIONES
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
+    app.secret_key = app.config['SECRET_KEY']
     
     # Inicializar extensiones
     init_extensions(app)

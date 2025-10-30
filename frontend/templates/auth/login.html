@@ -1,0 +1,149 @@
+# frontend/templates/auth/login.html - VERSIÓN CORREGIDA
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Monitoreo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .auth-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        .auth-card h2 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        .auth-card p {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .form-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .form-footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .alert-danger {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>🌡️ Sistema de Monitoreo Ambiental</h2>
+            <p>Ingrese sus credenciales</p>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('web.login') }}">
+                <div class="form-group">
+                    <label for="correo">Correo Electrónico</label>
+                    <input type="email" id="correo" name="correo" required autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contraseña">Contraseña</label>
+                    <input type="password" id="contraseña" name="contraseña" required>
+                </div>
+                
+                <button type="submit" class="btn-primary">Iniciar Sesión</button>
+                
+                <div class="form-footer">
+                    <a href="{{ url_for('web.forgot_password') }}">¿Olvidó su contraseña?</a>
+                </div>
+            </form>
+            
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem;">Usuarios de prueba:</p>
+                <p style="font-size: 0.85rem; color: #6b7280; margin: 0;">
+                    <strong>Admin:</strong> admin@sistema.com / Admin123!<br>
+                    <strong>Usuario:</strong> juan@sistema.com / Usuario123!
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
