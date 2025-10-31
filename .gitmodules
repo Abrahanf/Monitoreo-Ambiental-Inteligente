@@ -1,0 +1,3 @@
+[submodule "hardware/p1/nodo/components/esp-idf-lib"]
+	path = hardware/p1/nodo/components/esp-idf-lib
+	url = https://github.com/UncleRus/esp-idf-lib.git

@@ -8,3 +8,12 @@ venv/
 .DS_Store
 *.pkl
 saved_models/*.pkl" > .gitignore
+
+# Ignorar archivos de compilación de ESP-IDF
+hardware/**/build/
+# Ignorar configuración local
+hardware/**/sdkconfig
+hardware/**/sdkconfig.defaults
+hardware/**/partitions.csv
+# Ignorar librerías locales de ESP-IDF
+#hardware/**/components/esp-idf-lib/
