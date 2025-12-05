@@ -1,0 +1,23 @@
+meta {
+  name: LOGIN admin
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/api/auth/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "correo": "admin1@gmail.com",
+    "contrasena": "admin123"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

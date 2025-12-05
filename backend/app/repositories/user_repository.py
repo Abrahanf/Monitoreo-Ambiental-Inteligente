@@ -11,13 +11,12 @@ class UserRepository:
         db.session.commit()
         return user
     
-    @staticmethod
-    def find_by_id(user_id):
+    
+    def find_by_id(self, user_id):
         """Busca usuario por ID"""
         return User.query.get(user_id)
     
-    @staticmethod
-    def find_by_email(email):
+    def find_by_email(self, email):
         """Busca usuario por correo"""
         return User.query.filter_by(correo=email).first()
     
@@ -29,8 +28,7 @@ class UserRepository:
             query = query.filter_by(activo=True)
         return query.all()
     
-    @staticmethod
-    def update(user_id, user_data):
+    def update(self, user_id, user_data):
         """Actualiza un usuario"""
         user = User.query.get(user_id)
         if user:

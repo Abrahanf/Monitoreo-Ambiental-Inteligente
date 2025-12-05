@@ -5,24 +5,22 @@ from app.extensions import db
 from app.models import Measurement
 
 class MeasurementRepository:
-    @staticmethod
-    def create(measurement_data):
-        """Crea una nueva medición"""
-        measurement = Measurement(**measurement_data)
+    
+    def create(self, **kwargs):
+        """Crea una nueva medición recibiendo argumentos sueltos"""
+        measurement = Measurement(**kwargs)
         db.session.add(measurement)
         db.session.commit()
         return measurement
     
-    @staticmethod
-    def create_bulk(measurements_data):
+    def create_bulk(self, measurements_data):
         """Crea múltiples mediciones de forma eficiente"""
         measurements = [Measurement(**data) for data in measurements_data]
         db.session.bulk_save_objects(measurements)
         db.session.commit()
         return measurements
     
-    @staticmethod
-    def find_by_node(node_id, start_date=None, end_date=None, limit=1000):
+    def find_by_node(seilf, node_id, start_date=None, end_date=None, limit=1000):
         """Obtiene mediciones de un nodo en un rango de fechas"""
         query = Measurement.query.filter_by(nodo_id=node_id)
         
@@ -40,8 +38,7 @@ class MeasurementRepository:
             .order_by(Measurement.fecha_hora.desc())\
             .limit(limit).all()
     
-    @staticmethod
-    def get_statistics(node_id, start_date, end_date):
+    def get_statistics(self, node_id, start_date, end_date):
         """Obtiene estadísticas de un nodo en un período"""
         stats = db.session.query(
             func.avg(Measurement.temperatura).label('temp_avg'),
@@ -62,6 +59,9 @@ class MeasurementRepository:
             )
         ).first()
         
+        if not stats or stats.count == 0:
+            return None
+
         return {
             'temperatura': {
                 'promedio': float(stats.temp_avg) if stats.temp_avg else 0,
@@ -104,8 +104,7 @@ class MeasurementRepository:
             'co2': float(r.co2)
         } for r in results]
     
-    @staticmethod
-    def delete_old_measurements(days=90):
+    def delete_old_measurements(self, days=90):
         """Elimina mediciones antiguas (limpieza automática)"""
         cutoff_date = datetime.utcnow() - timedelta(days=days)
         deleted = Measurement.query.filter(

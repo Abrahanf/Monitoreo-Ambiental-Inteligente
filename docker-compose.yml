@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # ------------------------------------
+  # SERVICIO 1: Base de Datos (MySQL)
+  # ------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: monitoreo_db
+      MYSQL_ROOT_PASSWORD: rootpassword  # Cambia esto si quieres
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - red_iot
+
+  # ------------------------------------
+  # SERVICIO 2: Tu Broker MQTT
+  # ------------------------------------
+  mqtt_broker:
+    build: ./broker_mqtt  # Busca el Dockerfile en la carpeta broker_mqtt
+    container_name: mosquitto_broker
+    restart: always
+    ports:
+      - "1883:1883"       # Puerto para los ESP32
+    networks:
+      - red_iot
+
+  # ------------------------------------
+  # SERVICIO 3: Tu Backend API (Para el Frontend)
+  # ------------------------------------
+  backend_api:
+    build: ./backend      # Busca el Dockerfile en la carpeta backend
+    container_name: flask_api
+    restart: always
+    ports:
+      - "5000:5000"       # Puerto para el Frontend
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:rootpassword@db:3306/monitoreo_db
+      - MQTT_BROKER_URL=mqtt_broker
+    depends_on:
+      - db
+      - mqtt_broker
+    networks:
+      - red_iot
+
+  # ------------------------------------
+  # SERVICIO 4: Tu Backend Worker (Para escuchar MQTT)
+  # ------------------------------------
+  backend_worker:
+    build: ./backend      # ¡Reusa el MISMO código del backend!
+    container_name: flask_worker
+    restart: always
+    # OJO: Aquí cambiamos el comando para que no abra la web, sino que escuche
+    command: python -m app.mqtt_worker.listener 
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:rootpassword@db:3306/monitoreo_db
+      - MQTT_BROKER_URL=mqtt_broker
+    depends_on:
+      - backend_api
+    networks:
+      - red_iot
+
+# ------------------------------------
+  # SERVICIO 5: Frontend React
+  # ------------------------------------
+  frontend:
+    build: ./frontend
+    container_name: react_frontend
+    restart: always
+    ports:
+      - "3000:3000"  # Puerto Web
+    volumes:
+      # Esto es MAGIA: Permite que si editas un archivo en VS Code, 
+      # se actualice en el navegador sin reiniciar el contenedor.
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      # OJO: Aquí sí usamos localhost porque es el navegador quien llama
+      - REACT_APP_API_URL=http://localhost:5000/api 
+    depends_on:
+      - backend_api
+    networks:
+      - red_iot
+      
+# Definimos la red para que se vean entre ellos
+networks:
+  red_iot:
+
+# Definimos volumen para que la DB no se borre al apagar
+volumes:
+  db_data:

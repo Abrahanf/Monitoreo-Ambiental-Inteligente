@@ -1,0 +1,20 @@
+meta {
+  name: Historial de mediciones
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:5000/api/measurements/historical/2
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2NDg3MDYxMSwianRpIjoiYzllMmU5NjctMzBjNi00MWVjLTg5ZGYtZDI2MTIyZTUxMzU0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6MiwibmJmIjoxNzY0ODcwNjExLCJleHAiOjE3NjQ4NzQyMTEsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbWFpbCI6ImFkbWluMUBnbWFpbC5jb20ifQ.J2C6-0TSG11OejDNdFj6Uymsri0BfqnEaT3esgSklRI
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

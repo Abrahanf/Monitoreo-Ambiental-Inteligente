@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Pruebas_backend_ICC",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

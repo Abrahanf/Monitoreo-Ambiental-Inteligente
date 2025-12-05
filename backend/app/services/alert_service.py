@@ -1,71 +1,93 @@
 # backend/app/services/alert_service.py
 from datetime import datetime, date
-from app.repositories import AlertRepository
+from app.repositories.alert_repository import AlertRepository
+from app.repositories.sensor_repository import SensorRepository
 
 class AlertService:
-    @staticmethod
-    def check_and_create_alerts(measurement, node):
-        """Verifica umbrales y crea alertas si es necesario"""
-        alerts_created = []
+    def __init__(self):
+        self.alert_repo = AlertRepository()
+        self.sensor_repo = SensorRepository()
+
+    # Esta es la función que llama el Worker
+    def check_thresholds(self, nodo_id, temp, hum, co2):
+        """Verifica umbrales recibiendo datos crudos"""
         
-        # Obtener sensores del nodo
-        for sensor in node.sensores:
+        # 1. Obtenemos la configuración de los sensores de la BD
+        sensores = self.sensor_repo.get_by_node(nodo_id)
+        
+        if not sensores:
+            return []
+
+        alerts_created = []
+
+        for sensor in sensores:
+            # Si el sensor está apagado, lo ignoramos
             if sensor.estado == 'OFF':
                 continue
-            
+
+            # 2. Mapeamos el dato que llegó con la variable del sensor
             value = None
-            tipo = None
-            
-            if sensor.variable == 'temp':
-                value = measurement.temperatura
-                tipo = 'Temperatura'
-            elif sensor.variable == 'hum':
-                value = measurement.humedad
-                tipo = 'Humedad'
-            elif sensor.variable == 'CO2':
-                value = measurement.co2
-                tipo = 'CO2'
-            
+            tipo_alerta = None
+
+            # Ajusta estos strings según lo que tengas en tu BD ('temperatura' o 'temp')
+            if sensor.variable in ['temp', 'temperatura', 'Temperatura']:
+                value = temp
+                tipo_alerta = 'Temperatura'
+            elif sensor.variable in ['hum', 'humedad', 'Humedad']:
+                value = hum
+                tipo_alerta = 'Humedad'
+            elif sensor.variable in ['co2', 'CO2']:
+                value = co2
+                tipo_alerta = 'CO2'
+
+            # Si no llegó dato para este sensor, pasamos
             if value is None:
                 continue
-            
-            # Verificar si se superó el umbral
+
+            # 3. Lógica de verificación (Tu lógica original)
             umbral_superado = None
-            if value < sensor.umbral_min:
+            mensaje = ""
+
+            if sensor.umbral_min is not None and value < sensor.umbral_min:
                 umbral_superado = sensor.umbral_min
-                mensaje = f'{tipo} por debajo del mínimo ({value} < {umbral_superado})'
-            elif value > sensor.umbral_max:
-                umbral_superado = sensor.umbral_max
-                mensaje = f'{tipo} por encima del máximo ({value} > {umbral_superado})'
+                mensaje = f'{tipo_alerta} por debajo del mínimo ({value} < {umbral_superado})'
             
+            elif sensor.umbral_max is not None and value > sensor.umbral_max:
+                umbral_superado = sensor.umbral_max
+                mensaje = f'{tipo_alerta} por encima del máximo ({value} > {umbral_superado})'
+
+            # 4. Si hubo problema, creamos la alerta
             if umbral_superado:
-                # Determinar severidad
-                severidad = AlertService._calculate_severity(value, sensor)
-                
-                # Crear alerta
-                alert_data = {
-                    'nodo_id': node.id,
-                    'fecha': date.today(),
-                    'hora': datetime.now().time(),
-                    'tipo': tipo,
-                    'valor': value,
-                    'umbral': umbral_superado,
-                    'severidad': severidad,
-                    'estado': 'Activa',
-                    'mensaje': mensaje
-                }
-                
-                alert = AlertRepository.create(alert_data)
+                # Usamos tu cálculo de severidad
+                severidad = self._calculate_severity(value, sensor)
+
+                # Preparamos los datos para el repositorio
+                # Usamos argumentos nombrados (kwargs) como configuramos el repo
+                alert = self.alert_repo.create(
+                    nodo_id=nodo_id,
+                    fecha=date.today(),
+                    hora=datetime.now().time(),
+                    tipo=tipo_alerta,
+                    valor=value,
+                    umbral=umbral_superado,
+                    severidad=severidad,
+                    estado='Activa',
+                    mensaje=mensaje # Asegúrate que tu modelo Alerta tenga este campo, si no, quítalo
+                )
                 alerts_created.append(alert)
-        
+                print(f"🚨 ALERTA CREADA: {mensaje}")
+
         return alerts_created
-    
-    @staticmethod
-    def _calculate_severity(value, sensor):
-        """Calcula la severidad de una alerta"""
-        # Calcular diferencia porcentual
+
+    def _calculate_severity(self, value, sensor):
+        """Tu lógica original de cálculo porcentual"""
+        if not sensor.umbral_max or not sensor.umbral_min:
+            return 'Media' # Fallback si faltan umbrales
+
         rango = sensor.umbral_max - sensor.umbral_min
-        
+        if rango == 0: return 'Alta'
+
+        diff_percent = 0
         if value < sensor.umbral_min:
             diff_percent = abs((sensor.umbral_min - value) / rango) * 100
         else:
@@ -79,6 +101,7 @@ class AlertService:
             return 'Media'
         else:
             return 'Baja'
+
     
     @staticmethod
     def get_active_alerts(node_id=None):

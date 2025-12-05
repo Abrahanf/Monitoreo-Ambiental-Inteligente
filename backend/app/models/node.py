@@ -27,6 +27,10 @@ class Node(db.Model):
             'estado': self.estado,
             'fecha_registro': self.fecha_registro.isoformat(),
             'ultima_conexion': self.ultima_conexion.isoformat() if self.ultima_conexion else None,
-            'sensores': [s.to_dict() for s in self.sensores.all()]
+            'sensores': [s.to_dict() for s in self.sensores] if self.sensores else []
         }
-
+    
+def to_dict_full(self):
+    data = self.to_dict()
+    data['sensores'] = [s.to_dict() for s in self.sensores]
+    return data

@@ -1,32 +1,31 @@
-# backend/app/__init__.py - AÑADIR CONFIGURACIÓN DE SESIÓN
 from flask import Flask
-from datetime import timedelta
+from flask_cors import CORS  # <--- IMPORTANTE: Importar CORS
+from flask_jwt_extended import JWTManager
 from app.config import config
-from app.extensions import init_extensions, db
-from app.blueprints import register_blueprints
+from app.extensions import db, migrate # Importamos extensiones directas
+from app.controllers import register_blueprints
 
 def create_app(config_name='default'):
     """Factory para crear la aplicación Flask"""
-    app = Flask(__name__, 
-                template_folder='../../frontend/templates',
-                static_folder='../../frontend/static')
+    # 1. Crear App
+    app = Flask(__name__)
     
-    # Cargar configuración
+    # 2. Cargar Configuración
     app.config.from_object(config[config_name])
     
-    # CONFIGURACIÓN DE SESIONES
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
-    app.secret_key = app.config['SECRET_KEY']
+    # 3. HABILITAR CORS (ESTO ES LO QUE TE FALTA)
+    # Permite que el puerto 3000 (React) pida datos al 5000 (Flask)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     
-    # Inicializar extensiones
-    init_extensions(app)
+    # 4. Inicializar Extensiones
+    # Puedes usar tu función init_extensions(app) si prefieres, 
+    # pero asegurate de que inicialice db y migrate. 
+    # Aquí lo hago explícito para asegurar que funcione:
+    db.init_app(app)
+    migrate.init_app(app, db)
+    JWTManager(app)
     
-    # Registrar blueprints
+    # 5. Registrar Blueprints (Rutas)
     register_blueprints(app)
-    
-    # Crear tablas en contexto de aplicación
-    with app.app_context():
-        db.create_all()
     
     return app

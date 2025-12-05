@@ -6,11 +6,13 @@ class Measurement(db.Model):
     __tablename__ = 'mediciones'
     
     id = db.Column(db.Integer, primary_key=True)
-    nodo_id = db.Column(db.Integer, db.ForeignKey('nodos.id'), nullable=False, index=True)
     fecha_hora = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
     temperatura = db.Column(db.Float, nullable=False)
     humedad = db.Column(db.Float, nullable=False)
     co2 = db.Column(db.Float, nullable=False)
+
+    # relaciones
+    nodo_id = db.Column(db.Integer, db.ForeignKey('nodos.id'), nullable=False, index=True)
     
     # Índice compuesto para consultas frecuentes
     __table_args__ = (

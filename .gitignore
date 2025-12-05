@@ -17,3 +17,29 @@ hardware/**/sdkconfig.defaults
 hardware/**/partitions.csv
 # Ignorar librerías locales de ESP-IDF
 #hardware/**/components/esp-idf-lib/
+
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.env
+
+# Ignorar carpetas de Python (Backend)
+__pycache__/
+*.py[cod]
+venv/
+env/
+.pytest_cache/
+
+# Ignorar datos de Base de Datos y Broker (¡Muy Importante!)
+mysql_data/
+mosquitto/data/
+mosquitto/log/
+
+# Ignorar archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar claves (Seguridad)
+*.pem
+*.key
